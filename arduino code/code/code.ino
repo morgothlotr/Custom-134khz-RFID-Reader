@@ -97,7 +97,7 @@ void loop() {
             // We have 3 consecutive, identical packets. Success!
             serialPrintln("--- Scan Complete ---");
             serialPrint("National Code: ");
-            serialPrintU64(data.nationalCode);
+            serialPrintNationalCode(data.nationalCode);
             serialPrintln("");
             serialPrint("Country Code: ");
             serialPrintInt(data.countryCode);
