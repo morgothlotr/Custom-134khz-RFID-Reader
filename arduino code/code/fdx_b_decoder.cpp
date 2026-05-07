@@ -1,9 +1,33 @@
+/*
+ * 134.2 kHz RFID Animal Tag Reader
+ * Copyright (C) 2026 University of Canterbury FYP Group E02
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ * -------------------------------------------------------------------------
+ * FDX-B protocol decoder
+ *
+ * This implementation was developed using public FDX-B protocol
+ * information and behavioral reference from the Flipper Zero
+ * firmware project. (https://github.com/flipperdevices/flipperzero-firmware/lib/lfrfid/protocols/protocol_fdx_b.c)
+ *
+ * It is an independently written implementation and is not a
+ * verbatim copy of the original source code.
+ */
+
 #include "fdx_b_decoder.h"
 #include "serial_comms.h"
 
 #define PACKET_BIT_SIZE 128
 #define HEADER_BIT_SIZE 11
-#define DATA_BIT_SIZE 88 // 117 bits total data/control, 13 control bits removed = 104 data bits. Wait, gemini.md says 38+10+1+1+16+24 = 90 bits. I will use 88 bits as per the flipper zero code (64+24).
+#define DATA_BIT_SIZE 88 // 117 bits total data/control - 13 control bits removed = 104 data bits.
 #define CLEAN_DATA_BYTE_SIZE (DATA_BIT_SIZE / 8)
 
 // The FDX-B header is 10000000000
