@@ -15,7 +15,7 @@ void serialPrintln(const char* message) {
 }
 
 void serialPrintInt(int value) {
-  Serial1.println(value);
+  Serial1.print(value);
 }
 
 void serialPrintU64(uint64_t value) {
