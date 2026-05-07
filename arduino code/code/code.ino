@@ -1,33 +1,30 @@
 #include "demod_read.h"
 #include "toggle_pin.h"
 #include "serial_comms.h"
-
-#define SLOW_LOOP_MS 1000
-
-unsigned long lastSlow = 0;
+#include "fdx_b_decoder.h"
 
 void setup() {
   serialInit();
   demodInit();
   toggleInit();
+  decoderInit();
 }
 
 void loop() {
-  int pulse = readDemod();
+  int bit = readDemod();
 
-  static int count = 0;
-
-  if (pulse == PULSE_SHORT) {
-      serialPrint("S ");
-      count++;
-  } else if (pulse == PULSE_LONG) {
-      serialPrint("L ");
-      count++;
+  if (bit != BIT_NONE) {
+    if (decoderFeed(bit)) {
+      serialPrintln("\n--- Packet Received ---");
+      FdxbData data = getDecodedData();
+      serialPrint("National Code: ");
+      serialPrintU64(data.nationalCode);
+      serialPrintln("");
+      serialPrint("Country Code: ");
+      serialPrintInt(data.countryCode);
+      serialPrintln("");
+      serialPrint("Animal Flag: ");
+      serialPrintln(data.animalFlag ? "Yes" : "No");
+    }
   }
-
-  if (count >= 256) {
-      serialPrintln("");  // newline every 16 pulses
-      count = 0;
-  }
-
 }

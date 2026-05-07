@@ -17,8 +17,10 @@ void demodInit() {
 }
 
 int readDemod() {
+  static bool last_pulse_short = false;
+
   if (!newPulse) {
-    return PULSE_NONE;
+    return BIT_NONE;
   }
 
   noInterrupts();
@@ -27,10 +29,19 @@ int readDemod() {
   interrupts();
 
   if (duration >= FDX_B_SHORT_LOW && duration <= FDX_B_SHORT_HIGH) {
-    return PULSE_SHORT;  // potential 0 bit
+    if (last_pulse_short) {
+      last_pulse_short = false;
+      return 0; // Two short pulses = 0
+    } else {
+      last_pulse_short = true;
+      return BIT_NONE; // First of two short pulses
+    }
   } else if (duration >= FDX_B_LONG_LOW && duration <= FDX_B_LONG_HIGH) {
-    return PULSE_LONG;   // 1 bit
+    last_pulse_short = false;
+    return 1; // One long pulse = 1
+  } else {
+    // Invalid pulse length, reset state
+    last_pulse_short = false;
+    return BIT_NONE;
   }
-
-  return PULSE_NONE;  // out of range, ignore
 }

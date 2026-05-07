@@ -17,6 +17,7 @@
 #define PULSE_NONE  -1
 #define PULSE_SHORT  0
 #define PULSE_LONG   1
+#define BIT_NONE    -1
 
 void demodInit();
 int readDemod();

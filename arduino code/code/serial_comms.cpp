@@ -17,3 +17,7 @@ void serialPrintln(const char* message) {
 void serialPrintInt(int value) {
   Serial1.println(value);
 }
+
+void serialPrintU64(uint64_t value) {
+  Serial1.print((unsigned long long)value);
+}

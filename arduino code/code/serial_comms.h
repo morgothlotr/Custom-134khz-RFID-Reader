@@ -10,3 +10,4 @@ void serialInit();
 void serialPrint(const char* message);
 void serialPrintln(const char* message);
 void serialPrintInt(int value);
+void serialPrintU64(uint64_t value);
