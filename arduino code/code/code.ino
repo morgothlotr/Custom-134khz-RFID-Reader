@@ -4,7 +4,7 @@
 #include "button.h"
 #include "toggle_pin.h"
 
-// The main application state
+// state machine for reader
 enum AppState {
   IDLE,
   SCANNING
@@ -16,14 +16,14 @@ void setup() {
   demod_init();
   decoderInit();
   button_init();
-  toggleInit(); // For debug
+  toggleInit(); // For debug toggle gpio pins
 }
 
 void loop() {
   if (currentState == IDLE) {
     if (button_is_pressed()) {
       currentState = SCANNING;
-      demod_scan_init(); // This now resets packet count AND starts the timer
+      demod_scan_init(); // This resets packet count AND starts the timer
       serialPrintln("Button pressed, starting scan...");
     }
   } else if (currentState == SCANNING) {
@@ -45,7 +45,7 @@ void loop() {
 
     // Check for scan timeout
     if (demod_is_timed_out()) {
-      serialPrintln("Scan timed out. No tag found.");
+      serialPrintln("10 sec scan timed out. No tag found.");
       serialPrintln("Entering IDLE mode.");
       currentState = IDLE;
     }

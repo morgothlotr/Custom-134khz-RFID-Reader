@@ -48,7 +48,7 @@ int demod_read_bit() {
 }
 
 
-// --- Application-level Scan Logic (formerly scanner.cpp) ---
+// --- Application-level Scan Logic ---
 
 static int consecutivePackets = 0;
 static FdxbData lastValidData;
