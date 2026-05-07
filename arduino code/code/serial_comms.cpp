@@ -19,25 +19,31 @@ void serialPrintInt(int value) {
 }
 
 void serialPrintNationalCode(uint64_t value) {
+  // This is the manual implementation
   if (value == 0) {
     Serial1.print("000000000000");
     return;
   }
-
-  // Count the number of digits in the value
   uint64_t temp = value;
   int num_digits = 0;
   while (temp > 0) {
     temp /= 10;
     num_digits++;
   }
-
-  // Print the required number of leading zeros
   int num_zeros = 12 - num_digits;
   for (int i = 0; i < num_zeros; i++) {
     Serial1.print('0');
   }
-
-  // Print the actual number
   Serial1.print((unsigned long long)value);
+}
+
+void serial_print_final_data(FdxbData data) {
+  serialPrintln("--- Scan Complete ---");
+  serialPrint("National Code: ");
+  serialPrintNationalCode(data.nationalCode);
+  serialPrintln("");
+  serialPrint("Country Code: ");
+  serialPrintInt(data.countryCode);
+  serialPrintln("");
+  serialPrintln("---------------------\n\n");
 }

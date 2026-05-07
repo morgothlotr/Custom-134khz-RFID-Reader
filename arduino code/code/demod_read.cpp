@@ -1,5 +1,7 @@
 #include "demod_read.h"
 
+// --- Low-level ISR and Bit Decoding Logic ---
+
 volatile uint32_t lastEdgeTime = 0;
 volatile uint32_t pulseDuration = 0;
 volatile bool newPulse = false;
@@ -11,12 +13,12 @@ void demodISR() {
   newPulse = true;
 }
 
-void demodInit() {
+void demod_init() {
   pinMode(DEMOD_IN, INPUT);
   attachInterrupt(digitalPinToInterrupt(DEMOD_IN), demodISR, CHANGE);
 }
 
-int readDemod() {
+int demod_read_bit() {
   static bool last_pulse_short = false;
 
   if (!newPulse) {
@@ -40,8 +42,69 @@ int readDemod() {
     last_pulse_short = false;
     return 1; // One long pulse = 1
   } else {
-    // Invalid pulse length, reset state
     last_pulse_short = false;
     return BIT_NONE;
   }
+}
+
+
+// --- Application-level Scan Logic (formerly scanner.cpp) ---
+
+static int consecutivePackets = 0;
+static FdxbData lastValidData;
+static unsigned long scanStartTime = 0;
+const unsigned long scanTimeout = 10000; // 10 seconds
+
+static bool arePacketsEqual(const FdxbData& d1, const FdxbData& d2) {
+    return (d1.nationalCode == d2.nationalCode) && 
+           (d1.countryCode == d2.countryCode) &&
+           (d1.animalFlag == d2.animalFlag);
+}
+
+void demod_scan_init() {
+    consecutivePackets = 0;
+    scanStartTime = millis();
+}
+
+ScanStatus demod_process_packet(FdxbData data) {
+    if (data.countryCode != 0 || data.nationalCode != 0) {
+        serialPrint("Packet found... ");
+
+        if (consecutivePackets == 0) {
+            lastValidData = data;
+            consecutivePackets = 1;
+            serialPrintln("(1/3)");
+            return SCAN_IN_PROGRESS;
+        } else {
+            if (arePacketsEqual(data, lastValidData)) {
+                consecutivePackets++;
+                serialPrint("("); serialPrintInt(consecutivePackets); serialPrintln("/3)");
+                if (consecutivePackets >= 3) {
+                    return SCAN_COMPLETE;
+                }
+                return SCAN_IN_PROGRESS;
+            } else {
+                serialPrintln("Inconsistent packet, resetting sequence.");
+                lastValidData = data;
+                consecutivePackets = 1;
+                return SCAN_RESET;
+            }
+        }
+    } else {
+        if (consecutivePackets > 0) {
+            serialPrintln("Invalid packet received, resetting sequence.");
+            demod_scan_init();
+            return SCAN_RESET;
+        }
+    }
+    return SCAN_IN_PROGRESS;
+}
+
+FdxbData demod_get_final_data() {
+    return lastValidData;
+}
+
+bool demod_is_timed_out() {
+    if (scanStartTime == 0) return false;
+    return (millis() - scanStartTime > scanTimeout);
 }
