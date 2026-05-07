@@ -12,9 +12,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  * -------------------------------------------------------------------------
- * FDX-B protocol decoder
+ * fdx_b_decoder.cpp
  *
- * This implementation was developed using public FDX-B protocol
+ * This module implementation was developed using public FDX-B protocol
  * information and behavioral reference from the Flipper Zero
  * firmware project. (https://github.com/flipperdevices/flipperzero-firmware/lib/lfrfid/protocols/protocol_fdx_b.c)
  *
