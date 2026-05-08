@@ -18,6 +18,7 @@
 #include "fdx_b_decoder.h"
 #include "button.h"
 #include "toggle_pin.h"
+#include "lcd_screen.h"
 
 // state machine for reader
 enum AppState {
@@ -32,6 +33,7 @@ void setup() {
   decoderInit();
   button_init();
   toggleInit(); // For debug toggle gpio pins
+  lcd_init();
 }
 
 void loop() {
@@ -53,6 +55,7 @@ void loop() {
           // Scan is complete, print the final data
           FdxbData finalData = demod_get_final_data();
           serial_print_final_data(finalData);
+          lcd_print_data(finalData);
           currentState = IDLE;
         }
       }
