@@ -168,7 +168,7 @@ FdxbData getDecodedData() {
   }
 
   // 3. Extract data using bit-level functions
-  // The Flipper Zero code reverses the bits after extracting them.
+
   
   uint64_t raw_national_code = extract_bits(cleaned_data, 0, 38);
   data.nationalCode = raw_national_code;
