@@ -1,0 +1,6 @@
+../Src/lcd.c:69:6:LCD_Init	1
+../Src/lcd.c:95:6:LCD_Clear	3
+../Src/lcd.c:110:6:LCD_Command	1
+../Src/lcd.c:118:6:LCD_Data	1
+../Src/lcd.c:126:6:LCD_SetCursor	1
+../Src/lcd.c:133:6:LCD_Char	4
