@@ -42,7 +42,7 @@ void loop() {
   buzzer_update();
   if (currentState == IDLE) {
     if (button_is_pressed()) {
-      buzzer_play(successBeep, successBeepLength);
+      buzzer_beep(2000, 200);
       currentState = SCANNING;
       demod_scan_init(); // This resets packet count AND starts the timer
       scanning_print();
@@ -62,13 +62,14 @@ void loop() {
           serial_print_final_data(finalData);
           lcd_print_data(finalData);
           currentState = IDLE;
+          buzzer_beep(2055, 500);
         }
       }
     }
 
     // Check for scan timeout
     if (demod_is_timed_out()) {
-      buzzer_play(errorBeep, successBeepLength);
+      buzzer_beep(432, 700);
       scan_failed_print();
       serialPrintln("10 sec scan timed out. No tag found.");
       serialPrintln("Entering IDLE mode.");
