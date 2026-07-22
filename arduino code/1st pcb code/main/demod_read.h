@@ -45,6 +45,7 @@ enum ScanStatus {
 };
 
 void demod_init();
+void print_edges();
 void shd_enable();
 void shd_disable();
 int demod_read_bit();

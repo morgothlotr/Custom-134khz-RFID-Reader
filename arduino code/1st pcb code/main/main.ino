@@ -37,8 +37,16 @@ void setup() {
   lcd_init();
   buzzer_init();
 }
+uint32_t edge_print_pace = 0;
 
 void loop() {
+  if (edge_print_pace > 10000) {
+    print_edges();
+    edge_print_pace = 0;
+    serialPrintln("");
+  }
+  edge_print_pace++;
+  
   buzzer_update();
   if (currentState == IDLE) {
     if (button_is_pressed()) {
@@ -66,7 +74,7 @@ void loop() {
         }
       }
     }
-
+  
     // Check for scan timeout
     if (demod_is_timed_out()) {
       buzzer_beep(432, 700);

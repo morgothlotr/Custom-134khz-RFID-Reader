@@ -19,19 +19,27 @@
 volatile uint32_t lastEdgeTime = 0;
 volatile uint32_t pulseDuration = 0;
 volatile bool newPulse = false;
+volatile uint32_t edges = 0;
 
 void demodISR() {
+  edges++;
   uint32_t now = micros();
   pulseDuration = now - lastEdgeTime;
   lastEdgeTime = now;
   newPulse = true;
 }
 
+void print_edges() {
+  serialPrintInt(edges);
+}
+
 void demod_init() {
   pinMode(DEMOD_IN, INPUT);
   attachInterrupt(digitalPinToInterrupt(DEMOD_IN), demodISR, CHANGE);
   pinMode(NOT_SHD_ENABLE, OUTPUT);
-  digitalWrite(NOT_SHD_ENABLE, HIGH);
+  //digitalWrite(NOT_SHD_ENABLE, HIGH);
+  shd_enable();
+  digitalWrite(NOT_SHD_ENABLE, LOW);
 }
 
 void shd_enable() {
@@ -39,7 +47,8 @@ void shd_enable() {
 }
 
 void shd_disable() {
-  digitalWrite(NOT_SHD_ENABLE, HIGH);
+  //digitalWrite(NOT_SHD_ENABLE, HIGH);
+  digitalWrite(NOT_SHD_ENABLE, LOW);
 }
 
 int demod_read_bit() {
@@ -88,7 +97,7 @@ static bool arePacketsEqual(const FdxbData& d1, const FdxbData& d2) {
 void demod_scan_init() {
     consecutivePackets = 0;
     scanStartTime = millis();
-    shd_enable();
+    //shd_enable();
     pinMode(LVL_SHIFT_ENABLE, OUTPUT);
     digitalWrite(LVL_SHIFT_ENABLE, HIGH);
 }
@@ -108,7 +117,7 @@ ScanStatus demod_process_packet(FdxbData data) {
                 serialPrint("("); serialPrintInt(consecutivePackets); serialPrintln("/3)");
                 if (consecutivePackets >= 3) {
                     return SCAN_COMPLETE;
-                    shd_disable();
+                    //shd_disable();
                 }
                 return SCAN_IN_PROGRESS;
             } else {
@@ -135,7 +144,7 @@ FdxbData demod_get_final_data() {
 bool demod_is_timed_out() {
     if (scanStartTime == 0) return false;
     if (millis() - scanStartTime > scanTimeout) {
-      shd_disable();
+      //shd_disable();
       return (true);
     } else { 
     return (false);
