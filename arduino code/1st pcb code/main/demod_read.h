@@ -19,8 +19,8 @@
 #include "fdx_b_decoder.h" // Needed for FdxbData and ScanStatus
 
 // --- Pulse & Bit Decoding ---
-#define DEMOD_IN PB_4
-#define NOT_SHD_ENABLE PB_3
+#define DEMOD_IN PB_3
+#define NOT_SHD_ENABLE PB_2
 #define LVL_SHIFT_ENABLE PA_15
 
 #define FDX_B_SHORT_TIME  128

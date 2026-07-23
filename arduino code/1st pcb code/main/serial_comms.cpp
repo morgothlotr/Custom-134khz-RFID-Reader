@@ -14,28 +14,28 @@
  */
 #include "serial_comms.h"
 
-HardwareSerial Serial1(SERIAL_RX, SERIAL_TX);  // RX, TX
+Uart RfidSerial(SERIAL_RX, SERIAL_TX);  // RX, TX
 
 void serialInit() {
-  Serial1.begin(SERIAL_BAUD);
+  RfidSerial.begin(SERIAL_BAUD);
 }
 
 void serialPrint(const char* message) {
-  Serial1.print(message);
+  RfidSerial.print(message);
 }
 
 void serialPrintln(const char* message) {
-  Serial1.println(message);
+  RfidSerial.println(message);
 }
 
 void serialPrintInt(int value) {
-  Serial1.print(value);
+  RfidSerial.print(value);
 }
 
 void serialPrintNationalCode(uint64_t value) {
   // This is the manual implementation
   if (value == 0) {
-    Serial1.print("000000000000");
+    RfidSerial.print("000000000000");
     return;
   }
   uint64_t temp = value;
@@ -46,9 +46,9 @@ void serialPrintNationalCode(uint64_t value) {
   }
   int num_zeros = 12 - num_digits;
   for (int i = 0; i < num_zeros; i++) {
-    Serial1.print('0');
+    RfidSerial.print('0');
   }
-  Serial1.print((unsigned long long)value);
+  RfidSerial.print((unsigned long long)value);
 }
 
 void serial_print_final_data(FdxbData data) {

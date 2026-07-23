@@ -115,7 +115,7 @@ ScanStatus demod_process_packet(FdxbData data) {
             if (arePacketsEqual(data, lastValidData)) {
                 consecutivePackets++;
                 serialPrint("("); serialPrintInt(consecutivePackets); serialPrintln("/3)");
-                if (consecutivePackets >= 3) {
+                if (consecutivePackets >= 1) {
                     return SCAN_COMPLETE;
                     //shd_disable();
                 }

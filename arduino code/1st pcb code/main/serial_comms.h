@@ -21,7 +21,7 @@
 #define SERIAL_RX PA_10
 #define SERIAL_TX PA_9
 
-extern HardwareSerial Serial1;
+extern Uart RfidSerial;
 
 void serialInit();
 void serialPrint(const char* message);
