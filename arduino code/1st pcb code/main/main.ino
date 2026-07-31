@@ -13,7 +13,7 @@
  * See the GNU General Public License for more details.
  */
  
-#include "serial_comms.h"
+//#include "serial_comms.h"
 #include "demod_read.h"
 #include "fdx_b_decoder.h"
 #include "button.h"
@@ -29,7 +29,7 @@ enum AppState {
 AppState currentState = IDLE;
 
 void setup() {
-  serialInit();
+  //serialInit();
   demod_init();
   decoderInit();
   button_init();
@@ -40,21 +40,14 @@ void setup() {
 uint32_t edge_print_pace = 0;
 
 void loop() {
-  if (edge_print_pace > 10000) {
-    print_edges();
-    edge_print_pace = 0;
-    serialPrintln("");
-  }
-  edge_print_pace++;
-  
   buzzer_update();
   if (currentState == IDLE) {
     if (button_is_pressed()) {
       buzzer_beep(2000, 200);
       currentState = SCANNING;
       demod_scan_init(); // This resets packet count AND starts the timer
-      scanning_print();
-      serialPrintln("Button pressed, starting scan...");
+      //scanning_print();
+      //serialPrintln("Button pressed, starting scan...");
     }
   } else if (currentState == SCANNING) {
     int bit = demod_read_bit();
@@ -67,11 +60,12 @@ void loop() {
         if (status == SCAN_COMPLETE) {
           // Scan is complete, print the final data
           FdxbData finalData = demod_get_final_data();
-          serial_print_final_data(finalData);
+          //serial_print_final_data(finalData);
           lcd_print_data(finalData);
           currentState = IDLE;
           buzzer_beep(2055, 500);
         }
+        
       }
     }
   
@@ -79,8 +73,8 @@ void loop() {
     if (demod_is_timed_out()) {
       buzzer_beep(432, 700);
       scan_failed_print();
-      serialPrintln("10 sec scan timed out. No tag found.");
-      serialPrintln("Entering IDLE mode.");
+      //serialPrintln("10 sec scan timed out. No tag found.");
+      //serialPrintln("Entering IDLE mode.");
       currentState = IDLE;
     }
   }
