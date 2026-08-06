@@ -13,8 +13,10 @@
  * See the GNU General Public License for more details.
  */
 #include "serial_comms.h"
+#include <HardwareSerial.h>
+#include <Arduino.h>
 
-Uart RfidSerial(SERIAL_RX, SERIAL_TX);  // RX, TX
+HardwareSerial RfidSerial(SERIAL_RX, SERIAL_TX);  // RX, TX
 
 void serialInit() {
   RfidSerial.begin(SERIAL_BAUD);
