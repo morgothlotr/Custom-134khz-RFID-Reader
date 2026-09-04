@@ -63,3 +63,13 @@ void lcd_print_data(FdxbData data) {
   //lcd.print("Country: ");
   //lcd.print(data.countryCode);
 }
+
+void lcd_every_pixel_on() {
+  lcd.clear();
+  for (int row = 0; row < 2; row++) {
+    lcd.setCursor(0, row);
+    for (int col = 0; col < 16; col++) {
+      lcd.write(byte(255)); // Write a solid block character
+    }
+  }
+}

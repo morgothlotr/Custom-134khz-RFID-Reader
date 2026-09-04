@@ -19,4 +19,5 @@ void lcd_init();
 void lcd_print_data(FdxbData data);
 void scanning_print();
 void scan_failed_print();
+void lcd_every_pixel_on();
 #endif // LCD_SCREEN_H

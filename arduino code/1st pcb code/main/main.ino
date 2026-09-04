@@ -19,7 +19,15 @@
 #include "button.h"
 #include "toggle_pin.h"
 #include "lcd_screen.h"
+#include "oled_screen.h"
 #include "buzzer.h"
+
+// Define which screen is being used
+enum ScreenType {
+  LCD_SCREEN,
+  OLED_SCREEN
+};
+ScreenType screen_type = LCD_SCREEN; // Change this to OLED_SCREEN if using the OLED display
 
 // state machine for reader
 enum AppState {
@@ -34,7 +42,11 @@ void setup() {
   decoderInit();
   button_init();
   toggleInit(); // For debug toggle gpio pins
-  lcd_init();
+  if (screen_type == LCD_SCREEN) {
+    lcd_init();
+  } else if (screen_type == OLED_SCREEN) {
+    oled_init();
+  }
   buzzer_init();
 }
 uint32_t edge_print_pace = 0;
@@ -61,7 +73,11 @@ void loop() {
           // Scan is complete, print the final data
           FdxbData finalData = demod_get_final_data();
           //serial_print_final_data(finalData);
-          lcd_print_data(finalData);
+          if (screen_type == LCD_SCREEN) {
+            lcd_print_data(finalData);
+          } else if (screen_type == OLED_SCREEN) {
+            oled_print_data(finalData);
+          }
           currentState = IDLE;
           buzzer_beep(2055, 500);
         }
