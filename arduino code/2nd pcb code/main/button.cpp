@@ -17,8 +17,8 @@
 void button_init(Button* btn, uint8_t pin) {
   btn->pin = pin;
   btn->lastDebounceTime = 0;
-  btn->buttonState = LOW;
-  btn->lastButtonState = LOW;
+  btn->buttonState = HIGH;
+  btn->lastButtonState = HIGH;
   
   pinMode(pin, INPUT_PULLDOWN);
 }
@@ -36,7 +36,7 @@ ButtonEvent button_get_event(Button* btn) {
     if (reading != btn->buttonState) {
       btn->buttonState = reading;
       btn->lastButtonState = reading;
-      return (btn->buttonState == HIGH) ? BUTTON_PRESSED : BUTTON_RELEASED;
+      return (btn->buttonState == LOW) ? BUTTON_PRESSED : BUTTON_RELEASED;
     }
   }
 
@@ -45,5 +45,6 @@ ButtonEvent button_get_event(Button* btn) {
 }
 
 bool button_get_state(Button* btn) {
-  return btn->buttonState == HIGH;
+  button_get_event(btn);
+  return btn->buttonState == LOW;
 }
