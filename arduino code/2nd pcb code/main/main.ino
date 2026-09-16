@@ -18,6 +18,7 @@
 #include "buzzer.h"
 #include "demod_read.h"
 #include "fdx_b_decoder.h"
+#include "serial_comms.h"
 
 Button button1;
 
@@ -34,11 +35,15 @@ void setup() {
   pin_init(STATUS_LED_ADDRESS);
   button_init(&button1, BUTTON_1_PIN);
   buzzer_init();
+  serialInit();
 
   demod_init();
   decoderInit();
 
   currentState = IDLE;
+
+  //NOTE: 0 is on for LEDS, and 1 is off. Button appears to be correct
+  serialPrintln("Startup Successful");
 }
 
 void loop() {
@@ -49,6 +54,7 @@ void loop() {
   ButtonEvent buttonEvent = button_get_event(&button1);
   if (currentState == IDLE) {
     if (buttonEvent == BUTTON_PRESSED) {
+      serialPrintln(BUTTON PUSHED);
       buzzer_beep(2000, 200);  // 2 kHz for 200ms
       currentState = SCANNING;
       shd_enable();
@@ -56,7 +62,7 @@ void loop() {
     }
   } else if (currentState == SCANNING) {
     int bit = demod_read_bit();
-    
+
     if (bit != BIT_NONE) {
       if (decoderFeed(bit)) {
         // A full packet was received, process it
@@ -68,7 +74,8 @@ void loop() {
           FdxbData finalData = demod_get_final_data();
           buzzer_beep(2055, 500);  // Success tone
           shd_disable();
-          // TODO: Process finalData as needed (serial, display, eeprom)
+          // TODO: Process finalData as needed (display, eeprom)
+          serial_print_final_data();
           
           currentState = IDLE;
         }
@@ -79,6 +86,7 @@ void loop() {
     if (demod_is_timed_out()) {
       buzzer_beep(432, 700);  // Timeout tone
       // TODO: Handle timeout (print error message)
+      serialPrintln(TIMING OUT);
       shd_disable();
       currentState = IDLE;
     }
