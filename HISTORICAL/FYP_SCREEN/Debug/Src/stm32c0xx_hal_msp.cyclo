@@ -1,5 +1,0 @@
-../Src/stm32c0xx_hal_msp.c:62:6:HAL_MspInit	1
-../Src/stm32c0xx_hal_msp.c:85:6:HAL_I2C_MspInit	3
-../Src/stm32c0xx_hal_msp.c:132:6:HAL_I2C_MspDeInit	2
-../Src/stm32c0xx_hal_msp.c:163:6:HAL_SPI_MspInit	3
-../Src/stm32c0xx_hal_msp.c:212:6:HAL_SPI_MspDeInit	2
