@@ -19,6 +19,7 @@
 #include "demod_read.h"
 #include "fdx_b_decoder.h"
 #include "serial_comms.h"
+//#include "oled_screen.h"
 
 Button button1;
 
@@ -28,7 +29,7 @@ enum AppState {
   SCANNING,
   WAKE_START
 };
-AppState currentState = WAKE_START;
+AppState currentState = WAKE_START; //setup makes currentState idle straight away, why have it as WAKE_START?
 
 void setup() {
   pin_init(POWER_LED_ADDRESS);
@@ -36,25 +37,31 @@ void setup() {
   button_init(&button1, BUTTON_1_PIN);
   buzzer_init();
   serialInit();
-
+  //oled_init();
   demod_init();
   decoderInit();
 
   currentState = IDLE;
 
-  //NOTE: 0 is on for LEDS, and 1 is off. Button appears to be correct
   serialPrintln("Startup Successful");
 }
 
 void loop() {
+  //Remove one devie works
+  //NOTE: 0 is on for LEDS, and 1 is off.
   toggle_pin_update(POWER_LED_ADDRESS, 500);
   set_pin(STATUS_LED_ADDRESS, button_get_state(&button1));
-  buzzer_update();
 
+
+  buzzer_update();
   ButtonEvent buttonEvent = button_get_event(&button1);
+
   if (currentState == IDLE) {
     if (buttonEvent == BUTTON_PRESSED) {
-      serialPrintln(BUTTON PUSHED);
+      serialPrintln("BUTTON PUSHED");
+      //oled_clear();
+      //oled_print("SCANNING...", 0);
+      //oled_update();
       buzzer_beep(2000, 200);  // 2 kHz for 200ms
       currentState = SCANNING;
       shd_enable();
@@ -74,8 +81,12 @@ void loop() {
           FdxbData finalData = demod_get_final_data();
           buzzer_beep(2055, 500);  // Success tone
           shd_disable();
-          // TODO: Process finalData as needed (display, eeprom)
-          serial_print_final_data();
+          // TODO: Process finalData as needed (eeprom)
+          serial_print_final_data(finalData);
+          //oled_clear();
+          //oled_print("National Code:", 0);
+          //oled_print_data(finalData, 1);
+          //oled_update();
           
           currentState = IDLE;
         }
@@ -85,12 +96,17 @@ void loop() {
     // Check for scan timeout
     if (demod_is_timed_out()) {
       buzzer_beep(432, 700);  // Timeout tone
-      // TODO: Handle timeout (print error message)
-      serialPrintln(TIMING OUT);
+      serialPrintln("SCAN TIMED OUT");
+      //oled_clear();
+      //oled_print("SCAN TIMED OUT", 0);
+      //oled_update();
+
       shd_disable();
       currentState = IDLE;
     }
   }
   // TODO: set up sleep mode
+  // Probably need to make the button an interrupt not a loop but not sure yet
 }
+
 
