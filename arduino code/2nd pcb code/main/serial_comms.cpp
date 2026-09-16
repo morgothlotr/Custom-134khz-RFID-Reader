@@ -16,7 +16,7 @@
 #include <HardwareSerial.h>
 #include <Arduino.h>
 
-HardwareSerial& RfidSerial = Serial1;  // RX, TX
+Uart RfidSerial(SERIAL_RX, SERIAL_TX);   // RX = PA10, TX = PA9
 
 void serialInit() {
   RfidSerial.begin(SERIAL_BAUD);
@@ -35,7 +35,6 @@ void serialPrintInt(int value) {
 }
 
 void serialPrintNationalCode(uint64_t value) {
-  // This is the manual implementation
   if (value == 0) {
     RfidSerial.print("000000000000");
     return;

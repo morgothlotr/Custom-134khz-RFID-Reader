@@ -23,6 +23,8 @@
 
 Button button1;
 
+#define ANTENNA_ALWAYS_ON 1 //1 keeps antenna always on 0 sets normal button operation
+
 // state machine
 enum AppState {
   IDLE,
@@ -47,15 +49,14 @@ void setup() {
 }
 
 void loop() {
-  //Remove one devie works
   //NOTE: 0 is on for LEDS, and 1 is off.
   toggle_pin_update(POWER_LED_ADDRESS, 500);
   set_pin(STATUS_LED_ADDRESS, button_get_state(&button1));
-
-
   buzzer_update();
   ButtonEvent buttonEvent = button_get_event(&button1);
-
+  if (ANTENNA_ALWAYS_ON) {
+    shd_enable(); //for tessting
+  }
   if (currentState == IDLE) {
     if (buttonEvent == BUTTON_PRESSED) {
       serialPrintln("BUTTON PUSHED");
@@ -80,7 +81,9 @@ void loop() {
           // Scan is complete, print the final data
           FdxbData finalData = demod_get_final_data();
           buzzer_beep(2055, 500);  // Success tone
-          shd_disable();
+          if (!ANTENNA_ALWAYS_ON) {
+            shd_disable();
+          }
           // TODO: Process finalData as needed (eeprom)
           serial_print_final_data(finalData);
           //oled_clear();
@@ -101,7 +104,9 @@ void loop() {
       //oled_print("SCAN TIMED OUT", 0);
       //oled_update();
 
-      shd_disable();
+      if (!ANTENNA_ALWAYS_ON) {
+        shd_disable();
+      }
       currentState = IDLE;
     }
   }

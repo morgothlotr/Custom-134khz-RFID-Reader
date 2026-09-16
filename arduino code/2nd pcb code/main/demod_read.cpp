@@ -39,16 +39,17 @@ void print_edges() {
 void demod_init() {
   pinMode(DEMOD_IN, INPUT);
   attachInterrupt(digitalPinToInterrupt(DEMOD_IN), demodISR, CHANGE);
-  pinMode(NOT_SHD_ENABLE, OUTPUT);
+  
   shd_disable();
 }
 
 void shd_enable() {
-  digitalWrite(NOT_SHD_ENABLE, LOW);
+  pinMode(NOT_SHD_ENABLE, OUTPUT);
+  digitalWrite(NOT_SHD_ENABLE, LOW);;
 }
 
 void shd_disable() {
-  digitalWrite(NOT_SHD_ENABLE, HIGH);
+  pinMode(NOT_SHD_ENABLE, INPUT);
 }
 
 int demod_read_bit() {
