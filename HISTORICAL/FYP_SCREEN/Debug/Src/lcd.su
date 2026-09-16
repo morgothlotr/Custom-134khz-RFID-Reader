@@ -1,6 +1,0 @@
-../Src/lcd.c:69:6:LCD_Init	8	static
-../Src/lcd.c:95:6:LCD_Clear	16	static
-../Src/lcd.c:110:6:LCD_Command	16	static
-../Src/lcd.c:118:6:LCD_Data	16	static
-../Src/lcd.c:126:6:LCD_SetCursor	16	static
-../Src/lcd.c:133:6:LCD_Char	32	static
