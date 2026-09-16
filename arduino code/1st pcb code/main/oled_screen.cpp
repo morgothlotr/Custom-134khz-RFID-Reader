@@ -16,11 +16,11 @@ void oled_init() {
     
 }
 
-void scanning_print() {
+void oled_scanning_print() {
     
 }
 
-void scan_failed_print() {
+void oled_scan_failed_print() {
 
 }
 

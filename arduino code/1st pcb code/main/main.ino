@@ -88,7 +88,7 @@ void loop() {
     // Check for scan timeout
     if (demod_is_timed_out()) {
       buzzer_beep(432, 700);
-      scan_failed_print();
+      oled_scan_failed_print();
       //serialPrintln("10 sec scan timed out. No tag found.");
       //serialPrintln("Entering IDLE mode.");
       currentState = IDLE;

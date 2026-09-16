@@ -17,8 +17,8 @@
 
 void oled_init();
 void oled_print_data(FdxbData data);
-void scanning_print();
-void scan_failed_print();
+void oled_scanning_print();
+void oled_scan_failed_print();
 void oled_every_pixel_on();
 
 #endif // OLED_SCREEN_H
