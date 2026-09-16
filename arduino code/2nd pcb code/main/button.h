@@ -18,7 +18,7 @@
 
 // --- Button Configuration ---
 #define BUTTON_1_PIN PA_2
-//#define BUTTON_2_PIN PA_3
+//#define BUTTON_2_PIN PA_0
 #define DEBOUNCE_DELAY 50  // ms
 
 enum ButtonEvent {

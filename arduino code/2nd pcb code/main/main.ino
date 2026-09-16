@@ -15,6 +15,9 @@
 
 #include "button.h"
 #include "pin.h"
+#include "buzzer.h"
+#include "demod_read.h"
+#include "fdx_b_decoder.h"
 
 Button button1;
 
@@ -30,6 +33,10 @@ void setup() {
   pin_init(POWER_LED_ADDRESS);
   pin_init(STATUS_LED_ADDRESS);
   button_init(&button1, BUTTON_1_PIN);
+  buzzer_init();
+
+  demod_init();
+  decoderInit();
 
   currentState = IDLE;
 }
@@ -37,7 +44,45 @@ void setup() {
 void loop() {
   toggle_pin_update(POWER_LED_ADDRESS, 500);
   set_pin(STATUS_LED_ADDRESS, button_get_state(&button1));
+  buzzer_update();
 
+  ButtonEvent buttonEvent = button_get_event(&button1);
+  if (currentState == IDLE) {
+    if (buttonEvent == BUTTON_PRESSED) {
+      buzzer_beep(2000, 200);  // 2 kHz for 200ms
+      currentState = SCANNING;
+      shd_enable();
+      demod_scan_init();  // Reset packet count and start timer
+    }
+  } else if (currentState == SCANNING) {
+    int bit = demod_read_bit();
+    
+    if (bit != BIT_NONE) {
+      if (decoderFeed(bit)) {
+        // A full packet was received, process it
+        FdxbData data = getDecodedData();
+        ScanStatus status = demod_process_packet(data);
 
+        if (status == SCAN_COMPLETE) {
+          // Scan is complete, print the final data
+          FdxbData finalData = demod_get_final_data();
+          buzzer_beep(2055, 500);  // Success tone
+          shd_disable();
+          // TODO: Process finalData as needed (serial, display, eeprom)
+          
+          currentState = IDLE;
+        }
+      }
+    }
 
+    // Check for scan timeout
+    if (demod_is_timed_out()) {
+      buzzer_beep(432, 700);  // Timeout tone
+      // TODO: Handle timeout (print error message)
+      shd_disable();
+      currentState = IDLE;
+    }
+  }
+  // TODO: set up sleep mode
 }
+
