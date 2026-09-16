@@ -15,7 +15,6 @@
 #include "pin.h"
 
 // Store state for each pin (supports up to n pins)
-n = 3
 struct PinState {
   int pin;
   bool state;
@@ -23,7 +22,8 @@ struct PinState {
   bool in_use;
 };
 
-static PinState pins[n];
+#define NUM_PINS 3
+static PinState pins[NUM_PINS];
 static int pin_count = 0;
 
 void pin_init(int pin) {

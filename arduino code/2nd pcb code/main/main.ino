@@ -27,18 +27,16 @@ enum AppState {
 AppState currentState = WAKE_START;
 
 void setup() {
-  button_init();
   pin_init(POWER_LED_ADDRESS);
   pin_init(STATUS_LED_ADDRESS);
   button_init(&button1, BUTTON_1_PIN);
+  
+  currentState = IDLE;
 }
 
-
-AppState currentState = IDLE;
-
 void loop() {
-  toggle_pin_update(POWER_LED_ADDRESS, 500)
-  set_pin(STATUS_LED_ADDRESS, button_get_state(&statusButton));
+  toggle_pin_update(POWER_LED_ADDRESS, 500);
+  set_pin(STATUS_LED_ADDRESS, button_get_state(&button1));
 
 
 
