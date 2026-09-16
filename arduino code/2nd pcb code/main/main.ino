@@ -18,7 +18,7 @@
 
 Button button1;
 
-// state machine for reader
+// state machine
 enum AppState {
   IDLE,
   SCANNING,
@@ -30,7 +30,7 @@ void setup() {
   pin_init(POWER_LED_ADDRESS);
   pin_init(STATUS_LED_ADDRESS);
   button_init(&button1, BUTTON_1_PIN);
-  
+
   currentState = IDLE;
 }
 

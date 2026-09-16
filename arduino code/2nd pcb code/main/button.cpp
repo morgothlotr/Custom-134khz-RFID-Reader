@@ -35,9 +35,7 @@ ButtonEvent button_get_event(Button* btn) {
   if ((millis() - btn->lastDebounceTime) > DEBOUNCE_DELAY) {
     if (reading != btn->buttonState) {
       btn->buttonState = reading;
-      
       btn->lastButtonState = reading;
-      
       return (btn->buttonState == HIGH) ? BUTTON_PRESSED : BUTTON_RELEASED;
     }
   }
