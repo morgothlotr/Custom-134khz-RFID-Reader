@@ -19,9 +19,13 @@
 #include "demod_read.h"
 #include "fdx_b_decoder.h"
 #include "serial_comms.h"
-#include "oled_screen.h"
+#include "sleep.h"
+//#include "oled_screen.h"
 
 Button button1;
+Button button_sleep;
+
+bool awake_time_out = 0;
 
 #define ANTENNA_ALWAYS_ON 0 //1 keeps antenna always on 0 sets normal button operation
 
@@ -37,11 +41,13 @@ void setup() {
   pin_init(POWER_LED_ADDRESS);
   pin_init(STATUS_LED_ADDRESS);
   button_init(&button1, BUTTON_1_PIN);
+  button_init(&button_sleep, WAKE_PIN);
   buzzer_init();
   serialInit();
   oled_init();
   demod_init();
   decoderInit();
+  sleep_init();
 
   currentState = IDLE;
 
@@ -53,12 +59,13 @@ void loop() {
   toggle_pin_update(POWER_LED_ADDRESS, 500);
   set_pin(STATUS_LED_ADDRESS, button_get_state(&button1));
   buzzer_update();
-  ButtonEvent buttonEvent = button_get_event(&button1);
+  ButtonEvent button1Event = button_get_event(&button1);
+  ButtonEvent button_sleepEvent = button_get_event(&button_sleep);
   if (ANTENNA_ALWAYS_ON) {
     shd_enable(); //for testing
   }
   if (currentState == IDLE) {
-    if (buttonEvent == BUTTON_PRESSED) {
+    if (button1Event == BUTTON_PRESSED) {
       serialPrintln("BUTTON PUSHED");
 
       oled_clear();
@@ -114,6 +121,15 @@ void loop() {
     }
   }
   // TODO: set up sleep mode
+
+  if (button_get_state(&button_sleep)) {
+    awake_time_out = 1;
+  } else {
+    awake_time_out = 0;
+  }
+    if (awake_time_out) {
+    sleep_enter_standby();
+  }
 }
 
 
