@@ -20,6 +20,7 @@ Uart RfidSerial(SERIAL_RX, SERIAL_TX);   // RX = PA10, TX = PA9
 
 void serialInit() {
   RfidSerial.begin(SERIAL_BAUD);
+  Serial.begin(115200);
 }
 
 void serialPrint(const char* message) {
@@ -61,4 +62,17 @@ void serial_print_final_data(FdxbData data) {
   serialPrintInt(data.countryCode);
   serialPrintln("");
   serialPrintln("---------------------\n\n");
+}
+
+bool serial_command_received() {
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+
+    if (command == "DUMP") {
+      return true;
+    }
+  }
+
+  return false;
 }

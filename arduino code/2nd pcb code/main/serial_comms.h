@@ -28,3 +28,4 @@ void serialPrint(const char* message);
 void serialPrintln(const char* message);
 void serialPrintInt(int value);
 void serial_print_final_data(FdxbData data);
+bool serial_command_received();

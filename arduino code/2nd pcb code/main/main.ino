@@ -47,6 +47,17 @@ void setup() {
 }
 
 void loop() {
+  // Test code for communicating with a computer
+  // PC sends "DUMP" to board over USB serial, board sends back EEPROM Data
+  if (serial_command_received()) {
+    Serial.println("DUMP COMMAND RECEIVED");
+    Serial.println("TEST DATA 1");
+    Serial.println("TEST DATA 2");
+    Serial.println("TEST DATA 3");
+    Serial.println("DUMP_COMPLETE");
+    return;
+  }
+
   //NOTE: 0 is on for LEDS, and 1 is off.
   toggle_pin_update(POWER_LED_ADDRESS, 500);
   buzzer_update();
