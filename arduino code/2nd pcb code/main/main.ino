@@ -23,25 +23,17 @@
 #include "oled_screen.h"
 
 Button button1;
-Button button_sleep;
 
-bool awake_time_out = 0;
-
-#define ANTENNA_ALWAYS_ON 0 //1 keeps antenna always on 0 sets normal button operation
-
-// state machine
 enum AppState {
   IDLE,
   SCANNING,
-  WAKE_START
 };
-AppState currentState = WAKE_START; //setup makes currentState idle straight away, why have it as WAKE_START?
+AppState currentState = IDLE;
 
 void setup() {
   pin_init(POWER_LED_ADDRESS);
   pin_init(STATUS_LED_ADDRESS);
   button_init(&button1, BUTTON_1_PIN);
-  button_init(&button_sleep, WAKE_PIN);
   buzzer_init();
   serialInit();
   oled_init();
@@ -49,10 +41,6 @@ void setup() {
   decoderInit();
   sleep_init();
 
-  currentState = IDLE;
-  awake_time_out = 0;
-
-  serialPrintln("Startup Successful");
   oled_clear();
   oled_print("Hello", 1);
   oled_update();
@@ -65,72 +53,49 @@ void loop() {
   ButtonEvent button1Event = button_get_event(&button1);
   set_pin(STATUS_LED_ADDRESS, !button_get_state(&button1));
 
-  ButtonEvent buttonSleepEvent = button_get_event(&button_sleep);
-
-  if (ANTENNA_ALWAYS_ON) {
-    shd_enable(); //for testing
-  }
-  if (currentState == IDLE) {
-    if (button1Event == BUTTON_PRESSED) {
-      serialPrintln("BUTTON PUSHED");
-      oled_clear();
-      oled_print("SCANNING...", 0);
-      oled_update();
-      buzzer_beep(2000, 200);  // 2 kHz for 200ms
-      currentState = SCANNING;
-      shd_enable();
-      demod_scan_init();  // Reset packet count and start timer
-    }
+  if (currentState == IDLE && button1Event == BUTTON_PRESSED) {
+    sleep_input(); // Reset the sleep timer
+    oled_clear();
+    oled_print("SCANNING...", 0);
+    oled_update();
+    buzzer_beep(2000, 200);  // 2 kHz for 200ms
+    shd_enable();
+    demod_scan_init();  // Reset packet count and start timer
+    currentState = SCANNING;
   } else if (currentState == SCANNING) {
     int bit = demod_read_bit();
 
-    if (bit != BIT_NONE) {
-      if (decoderFeed(bit)) {
-        // A full packet was received, process it
-        FdxbData data = getDecodedData();
-        ScanStatus status = demod_process_packet(data);
+    if (bit != BIT_NONE && decoderFeed(bit)) {
+      // A full packet was received, process it
+      FdxbData data = getDecodedData();
+      ScanStatus status = demod_process_packet(data);
 
-        if (status == SCAN_COMPLETE) {
-          // Scan is complete, print the final data
-          FdxbData finalData = demod_get_final_data();
-          buzzer_beep(2055, 500);  // Success tone
-          if (!ANTENNA_ALWAYS_ON) {
-            shd_disable();
-          }
-          // TODO: Process finalData as needed (eeprom)
-          serial_print_final_data(finalData);
-          oled_clear();
-          oled_print("National Code:", 0);
-          oled_print_data(finalData, 1);
-          oled_update();
-          
-          currentState = IDLE;
-        }
+      if (status == SCAN_COMPLETE) {
+        // Scan is complete, print the final data
+        FdxbData finalData = demod_get_final_data();
+        buzzer_beep(2055, 500);  // Success tone
+        shd_disable();
+        oled_clear();
+        oled_print("National Code:", 0);
+        oled_print_data(finalData, 1);
+        oled_update();
+        // Save data to eeprom
+        currentState = IDLE;
       }
     }
 
     // Check for scan timeout
     if (demod_is_timed_out()) {
       buzzer_beep(432, 700);  // Timeout tone
-      serialPrintln("SCAN TIMED OUT");
       oled_clear();
       oled_print("SCAN TIMED OUT", 0);
       oled_update();
-
-      if (!ANTENNA_ALWAYS_ON) {
-        shd_disable();
-      }
+      shd_disable();
       currentState = IDLE;
     }
   }
-  // TODO: set up sleep mode
-
-  if (button_get_state(&button_sleep)) {
-    awake_time_out = 1;
-  } else {
-    awake_time_out = 0;
-  }
-    if (awake_time_out) {
+  // Check sleep timeout
+  if(sleep_check_timeout()) {
     sleep_enter_standby();
   }
 }

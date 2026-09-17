@@ -14,14 +14,29 @@
  */
 
 #include "sleep.h"
-#include "STM32LowPower.h"
+#include <STM32LowPower.h>
 #include "demod_read.h"
 #include "oled_screen.h"
 
+#define sleep_timeout_s 60
+static uint32_t last_input_time = 0;
+
 void sleep_init() {
   LowPower.begin();
-
   LowPower.attachInterruptWakeup(WAKE_PIN, nullptr, RISING, SHUTDOWN_MODE);
+  sleep_input();
+}
+
+void sleep_input() {
+  last_input_time = millis() / 1000;
+}
+
+bool sleep_check_timeout() {
+  uint16_t current_time_s = millis() / 1000;
+  if((current_time_s - last_input_time) > sleep_timeout_s) {
+    return true;
+  }
+  return false;
 }
 
 void sleep_enter_standby() {

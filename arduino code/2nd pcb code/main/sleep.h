@@ -19,7 +19,11 @@
 
 #define WAKE_PIN PA0 // PA0 = WKUP1 on STM32L072
 
+
+
 void sleep_init();
+void sleep_input()
+bool sleep_check_timeout();
 
 // Enter Standby mode (no RTC). 
 // Device will reset when the wakeup pin is triggered.
