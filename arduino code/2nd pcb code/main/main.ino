@@ -68,7 +68,7 @@ void loop() {
   ButtonEvent buttonSleepEvent = button_get_event(&button_sleep);
 
   if (ANTENNA_ALWAYS_ON) {
-    shd_enable(); //for tessting
+    shd_enable(); //for testing
   }
   if (currentState == IDLE) {
     if (button1Event == BUTTON_PRESSED) {
@@ -134,5 +134,3 @@ void loop() {
     sleep_enter_standby();
   }
 }
-
-
