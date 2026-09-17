@@ -19,11 +19,11 @@
 #include "demod_read.h"
 #include "fdx_b_decoder.h"
 #include "serial_comms.h"
-//#include "oled_screen.h"
+#include "oled_screen.h"
 
 Button button1;
 
-#define ANTENNA_ALWAYS_ON 1 //1 keeps antenna always on 0 sets normal button operation
+#define ANTENNA_ALWAYS_ON 0 //1 keeps antenna always on 0 sets normal button operation
 
 // state machine
 enum AppState {
@@ -39,7 +39,7 @@ void setup() {
   button_init(&button1, BUTTON_1_PIN);
   buzzer_init();
   serialInit();
-  //oled_init();
+  oled_init();
   demod_init();
   decoderInit();
 
@@ -55,14 +55,16 @@ void loop() {
   buzzer_update();
   ButtonEvent buttonEvent = button_get_event(&button1);
   if (ANTENNA_ALWAYS_ON) {
-    shd_enable(); //for tessting
+    shd_enable(); //for testing
   }
   if (currentState == IDLE) {
     if (buttonEvent == BUTTON_PRESSED) {
       serialPrintln("BUTTON PUSHED");
-      //oled_clear();
-      //oled_print("SCANNING...", 0);
-      //oled_update();
+
+      oled_clear();
+      oled_print("SCANNING...", 0);
+      oled_update();
+
       buzzer_beep(2000, 200);  // 2 kHz for 200ms
       currentState = SCANNING;
       shd_enable();
@@ -86,10 +88,11 @@ void loop() {
           }
           // TODO: Process finalData as needed (eeprom)
           serial_print_final_data(finalData);
-          //oled_clear();
-          //oled_print("National Code:", 0);
-          //oled_print_data(finalData, 1);
-          //oled_update();
+
+          oled_clear();
+          oled_print("National Code:", 0);
+          oled_print_data(finalData, 1);
+          oled_update();
           
           currentState = IDLE;
         }
@@ -100,9 +103,9 @@ void loop() {
     if (demod_is_timed_out()) {
       buzzer_beep(432, 700);  // Timeout tone
       serialPrintln("SCAN TIMED OUT");
-      //oled_clear();
-      //oled_print("SCAN TIMED OUT", 0);
-      //oled_update();
+      oled_clear();
+      oled_print("SCAN TIMED OUT", 0);
+      oled_update();
 
       if (!ANTENNA_ALWAYS_ON) {
         shd_disable();
@@ -111,7 +114,6 @@ void loop() {
     }
   }
   // TODO: set up sleep mode
-  // Probably need to make the button an interrupt not a loop but not sure yet
 }
 
 

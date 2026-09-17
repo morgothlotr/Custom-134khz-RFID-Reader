@@ -11,159 +11,276 @@
 #include "oled_screen.h"
 
 #define OLED_BUFFER_SIZE (OLED_WIDTH * OLED_HEIGHT / 8)
+#define OLED_I2C_SPEED   50000UL
+#define OLED_PAGE_COUNT  4
+#define OLED_RAM_WIDTH   132
+
+TwoWire OLED_WIRE(OLED_SDA, OLED_SCL);
 
 static uint8_t oled_buffer[OLED_BUFFER_SIZE];
 
 static uint8_t cursor_x = 0;
 static uint8_t cursor_y = 0;
+
 static bool oled_dirty = true;
 static bool oled_asleep = false;
 
-TwoWire OLED_WIRE(PB_9, PB_8); // CHANGE TO ACTUAL SDA, SCL PINS
-
-// Low Level I2C functions for sending commands and data
-static void oled_command(uint8_t command)
+// LOW LEVEL I2C
+static bool oled_command(uint8_t command)
 {
     OLED_WIRE.beginTransmission(OLED_ADDR);
-    OLED_WIRE.write(0x00);       // command control byte
+    OLED_WIRE.write(0x00); // SSD1305 command control byte
     OLED_WIRE.write(command);
-    OLED_WIRE.endTransmission();
+    return OLED_WIRE.endTransmission() == 0;
 }
 
 
-static void oled_data(const uint8_t *data, uint8_t length)
+static bool oled_data(const uint8_t *data, uint8_t length)
 {
     OLED_WIRE.beginTransmission(OLED_ADDR);
-    OLED_WIRE.write(0x40);       // data control byte
-
+    OLED_WIRE.write(0x40); // SSD1305 data control byte
     for (uint8_t i = 0; i < length; i++)
+    {
         OLED_WIRE.write(data[i]);
-
-    OLED_WIRE.endTransmission();
+    }
+    return OLED_WIRE.endTransmission() == 0;
 }
 
-// Start the controller
+
+// ============================================================
+// SET PAGE / COLUMN
+// ============================================================
+//
+// The SSD1305 has 132 RAM columns.
+//
+// Our panel exposes 128 pixels beginning at RAM column 4.
+//
+// Therefore:
+//     framebuffer X = 0
+//     SSD1305 RAM X = 4
+//
+// Page addressing mode is used because it was verified to
+// work correctly with this panel.
+// ============================================================
+
+static void oled_set_page(uint8_t page)
+{
+    if (page >= OLED_PAGE_COUNT)
+        return;
+
+    // Select page
+    oled_command(0xB0 | page);
+
+    // Set RAM column = OLED_COL_OFFSET
+    //
+    // Low nibble
+    oled_command(0x00 | (OLED_COL_OFFSET & 0x0F));
+
+    // High nibble
+    oled_command(0x10 | ((OLED_COL_OFFSET >> 4) & 0x0F));
+}
+
+
+// ============================================================
+// SSD1305 CONTROLLER INITIALISATION
+// ============================================================
+
 static void oled_controller_init()
 {
-    // Display OFF
-    oled_command(0xAE);
+    oled_command(0xAE); // Display OFF
 
-    // Display clock
     oled_command(0xD5);
-    oled_command(0x80);
+    oled_command(0x80); // Display Clock
 
-    // 128 x 32
-    oled_command(0xA8);
+    oled_command(0xA8); // Multiplex Ratio
     oled_command(0x1F);
 
-    // Display offset
-    oled_command(0xD3);
+    oled_command(0xD3); // Display Offset
     oled_command(0x00);
 
-    // Start line
-    oled_command(0x40);
+    oled_command(0x40); // Display Start Line
 
-    // Segment remap
-    oled_command(0xA1);
+    oled_command(0xA1); // Segment Remap
 
-    // COM scan direction
-    oled_command(0xC8);
+    oled_command(0xC8); // COM Scan Direction
 
-    // COM pin configuration
-    oled_command(0xDA);
+    oled_command(0xDA); // COM Hardware Configuration
     oled_command(0x12);
 
-    // Contrast
-    oled_command(0x81);
-    oled_command(0xFF);
+    oled_command(0x81); // Contrast
+    oled_command(0x40);
 
-    // Normal display
-    oled_command(0xA6);
+    oled_command(0xA6); // Normal Display
 
-    // Display follows RAM
-    oled_command(0xA4);
+    oled_command(0xA4); // Display Follows RAM
 
-    // Horizontal addressing
-    oled_command(0x20);
-    oled_command(0x00);
-
-    // Visible columns.
-    // SSD1305 has 132 RAM columns; this panel uses 128
-    oled_command(0x21);
-    oled_command(OLED_COL_OFFSET);
-    oled_command(127 + OLED_COL_OFFSET);
-
-    // Four pages = 32 rows
-    oled_command(0x22);
-    oled_command(0x00);
-    oled_command(0x03);
-
-    // Charge pump
-    oled_command(0x8D);
+    oled_command(0x8D); // Charge Pump
     oled_command(0x14);
 
-    // Display ON
-    oled_command(0xAF);
+    oled_command(0xD9); // Pre-charge Period
+    oled_command(0xF1);
+
+    oled_command(0xDB); // VCOMH deselect level
+    oled_command(0x40);
+
+    oled_command(0x20); // Page Addressing Mode
+    oled_command(0x02);
+
+    delay(100);
+    oled_command(0xAF); // Display On
+    delay(100);
 }
 
-//Start the screen
+
+// ============================================================
+// CLEAR CONTROLLER RAM
+// ============================================================
+//
+// This is deliberately done during initialization.
+//
+// We found during testing that stale/random controller RAM
+// contents could remain visible after power interruptions.
+//
+// The SSD1305 has 132 columns, so clear all 132 columns,
+// not just the 128 visible columns.
+// ============================================================
+
+static void oled_clear_controller_ram()
+{
+    uint8_t zeros[16];
+
+    for (uint8_t i = 0; i < sizeof(zeros); i++)
+    {
+        zeros[i] = 0x00;
+    }
+
+
+    for (uint8_t page = 0; page < OLED_PAGE_COUNT; page++)
+    {
+        // Select page
+        oled_command(0xB0 | page);
+
+        // Start at RAM column 0.
+        //
+        // We deliberately start at zero here because we want
+        // to clear ALL 132 RAM columns.
+        oled_command(0x00);
+        oled_command(0x10);
+
+
+        for (uint8_t column = 0;
+             column < OLED_RAM_WIDTH;
+             column += sizeof(zeros))
+        {
+            uint8_t count = sizeof(zeros);
+
+            if ((column + count) > OLED_RAM_WIDTH)
+            {
+                count = OLED_RAM_WIDTH - column;
+            }
+
+            oled_data(zeros, count);
+        }
+    }
+}
+
+
+// ============================================================
+// OLED INITIALISATION
+// ============================================================
+
 void oled_init()
 {
+    // Start I2C
     OLED_WIRE.begin();
-    delay(100);
+
+    // Keep the conservative speed that worked during testing.
+    OLED_WIRE.setClock(OLED_I2C_SPEED);
+
+    delay(200);
+
+
+    // Initialise controller
     oled_controller_init();
 
-    // Blank framebuffer
-    for (uint16_t i = 0; i < OLED_BUFFER_SIZE; i++)
-        oled_buffer[i] = 0;
 
+    // Clear MCU framebuffer
+    for (uint16_t i = 0; i < OLED_BUFFER_SIZE; i++)
+    {
+        oled_buffer[i] = 0x00;
+    }
+
+
+    // Clear actual SSD1305 RAM
+    oled_clear_controller_ram();
+
+
+    // Reset software state
     cursor_x = 0;
     cursor_y = 0;
 
     oled_dirty = true;
     oled_asleep = false;
 
-    // Send initial blank screen
+
+    // Send blank framebuffer
     oled_update();
 }
 
 
-// Have to directly call this function to update the screen, it is not in any other function except init
+// ============================================================
+// UPDATE DISPLAY
+// ============================================================
+
 void oled_update()
 {
-    // Don't send data while controller is asleep/unpowered
     if (oled_asleep)
         return;
 
-    // Nothing changed.
     if (!oled_dirty)
         return;
 
-    // Horizontal addressing
-    oled_command(0x20);
-    oled_command(0x00);
 
-    // Column range
-    oled_command(0x21);
-    oled_command(OLED_COL_OFFSET);
-    oled_command(127 + OLED_COL_OFFSET);
+    uint8_t block[16];
 
-    // Page range
-    oled_command(0x22);
-    oled_command(0x00);
-    oled_command(0x03);
 
-    // Send 16 bytes at a time as ram is kinda small
-    for (uint16_t i = 0; i < OLED_BUFFER_SIZE; i += 16)
-        oled_data(&oled_buffer[i], 16);
+    // Four pages for 32-pixel-high display.
+    for (uint8_t page = 0; page < OLED_PAGE_COUNT; page++)
+    {
+        oled_set_page(page);
+
+
+        uint16_t base = page * OLED_WIDTH;
+
+
+        // Send 128 visible columns.
+        for (uint8_t x = 0; x < OLED_WIDTH; x += 16)
+        {
+            for (uint8_t i = 0; i < 16; i++)
+            {
+                block[i] = oled_buffer[base + x + i];
+            }
+
+            oled_data(block, 16);
+        }
+    }
+
 
     oled_dirty = false;
 }
 
+
+// ============================================================
+// CLEAR FRAMEBUFFER
+// ============================================================
+
 void oled_clear()
 {
     for (uint16_t i = 0; i < OLED_BUFFER_SIZE; i++)
-        oled_buffer[i] = 0;
+    {
+        oled_buffer[i] = 0x00;
+    }
+
 
     cursor_x = 0;
     cursor_y = 0;
@@ -171,42 +288,77 @@ void oled_clear()
     oled_dirty = true;
 }
 
+
+// ============================================================
+// FULL BRIGHT
+// ============================================================
+
 void oled_fullbright()
 {
     for (uint16_t i = 0; i < OLED_BUFFER_SIZE; i++)
+    {
         oled_buffer[i] = 0xFF;
+    }
 
     oled_dirty = true;
 }
+
+
+// ============================================================
+// PIXEL
+// ============================================================
 
 void oled_pixel(uint8_t x, uint8_t y, bool on)
 {
     if (x >= OLED_WIDTH || y >= OLED_HEIGHT)
         return;
 
-    uint16_t index = x + ((y / 8) * OLED_WIDTH);
-    uint8_t mask = (uint8_t)(1U << (y % 8));
+
+    uint16_t index =
+        x + ((y / 8) * OLED_WIDTH);
+
+
+    uint8_t mask =
+        (uint8_t)(1U << (y % 8));
+
 
     if (on)
+    {
         oled_buffer[index] |= mask;
+    }
     else
+    {
         oled_buffer[index] &= (uint8_t)~mask;
+    }
+
 
     oled_dirty = true;
 }
+
 
 // ============================================================
 // FONT
 // ============================================================
 //
-// 5x7 font.
-// Character width = 5 pixels.
-// Character spacing = 1 pixel.
-// Text row height = 8 pixels.
+// 5x7 font
+//
+// Character width = 5 pixels
+// Character spacing = 1 pixel
+// Character height = 7 pixels
+// Row spacing = 8 pixels
 //
 // Supported:
-//   A-Z, a-z (turns into A-Z), 0-9, _, -, ., ,, space
-// Unsupported characters render as a space.
+//     A-Z
+//     a-z
+//     0-9
+//     _
+//     -
+//     .
+//     ,
+//     space
+//
+// Lowercase characters are rendered as uppercase.
+// Unsupported characters become spaces.
 // ============================================================
 
 static const uint8_t font5x7[][5] =
@@ -335,49 +487,82 @@ static const uint8_t font5x7[][5] =
     {0x40,0x40,0x40,0x40,0x40}
 };
 
+
+// ============================================================
+// FONT INDEX
+// ============================================================
+
 static int font_index(char c)
 {
-    if (c == ' ') return 0;
-    if (c == ',') return 1;
-    if (c == '-') return 2;
-    if (c == '.') return 3;
+    if (c == ' ')
+        return 0;
+
+    if (c == ',')
+        return 1;
+
+    if (c == '-')
+        return 2;
+
+    if (c == '.')
+        return 3;
+
 
     if (c >= '0' && c <= '9')
         return 4 + (c - '0');
 
+
     if (c >= 'A' && c <= 'Z')
         return 14 + (c - 'A');
+
 
     if (c >= 'a' && c <= 'z')
         return 14 + (c - 'a');
 
+
     if (c == '_')
         return 40;
 
+
     return 0;
 }
+
+
+// ============================================================
+// DRAW CHARACTER
+// ============================================================
 
 static void oled_char(uint8_t x, uint8_t y, char c)
 {
     int index = font_index(c);
 
+
     for (uint8_t column = 0; column < 5; column++)
     {
         uint8_t bits = font5x7[index][column];
 
+
         for (uint8_t row = 0; row < 7; row++)
         {
-            bool on = bits & (1U << row);
-
-            // Avoid modifying pixels outside the display.
-            if ((x + column) < OLED_WIDTH &&
-                (y + row) < OLED_HEIGHT)
+            if (bits & (1U << row))
             {
-                oled_pixel(x + column, y + row, on);
+                uint8_t px = x + column;
+                uint8_t py = y + row;
+
+
+                if (px < OLED_WIDTH &&
+                    py < OLED_HEIGHT)
+                {
+                    oled_pixel(px, py, true);
+                }
             }
         }
     }
 }
+
+
+// ============================================================
+// WRITE CHARACTER
+// ============================================================
 
 static void oled_write(char c)
 {
@@ -386,47 +571,100 @@ static void oled_write(char c)
         cursor_x = 0;
         cursor_y += 8;
 
+
         if (cursor_y + 7 >= OLED_HEIGHT)
+        {
             cursor_y = 0;
+        }
 
         return;
     }
 
-    // Wrap before drawing if character won't fit.
+
+    // Character is 5 pixels wide.
+    // One pixel of spacing is added.
     if (cursor_x + 5 >= OLED_WIDTH)
     {
         cursor_x = 0;
         cursor_y += 8;
 
+
         if (cursor_y + 7 >= OLED_HEIGHT)
+        {
             cursor_y = 0;
+        }
     }
+
 
     oled_char(cursor_x, cursor_y, c);
 
     cursor_x += 6;
 }
 
+
+// ============================================================
+// CLEAR ONE TEXT ROW
+// ============================================================
+
+static void oled_clear_row(uint8_t row)
+{
+    if (row >= 4)
+        return;
+
+
+    uint8_t y_start = row * 8;
+
+
+    for (uint8_t y = y_start;
+         y < y_start + 8;
+         y++)
+    {
+        for (uint8_t x = 0;
+             x < OLED_WIDTH;
+             x++)
+        {
+            oled_pixel(x, y, false);
+        }
+    }
+}
+
+
+// ============================================================
+// PRINT TEXT
+// ============================================================
+
 void oled_print(const char *text, uint8_t row)
 {
     if (row >= 4)
         return;
 
+
+    // Clear only this row first.
+    oled_clear_row(row);
+
+
     cursor_x = 0;
     cursor_y = row * 8;
+
 
     while (*text)
     {
         oled_write(*text);
         text++;
     }
+
+
+    // Explicitly send framebuffer to SSD1305.
+    oled_update();
 }
+
+
+// ============================================================
+// PRINT FDX-B NATIONAL CODE
+// ============================================================
 
 void oled_print_data(FdxbData data, uint8_t row)
 {
-    if (row >= 4)
-        return;
-
     char buf[13];
     uint64_t temp = data.nationalCode;
 
@@ -437,29 +675,53 @@ void oled_print_data(FdxbData data, uint8_t row)
     }
 
     buf[12] = '\0';
-
     oled_print(buf, row);
 }
 
-// Call before turning off MOSFET
+
+// ============================================================
+// OLED SLEEP
+// ============================================================
+
 void oled_sleep()
 {
     if (oled_asleep)
         return;
 
+
     oled_command(0xAE);
+
     oled_asleep = true;
 }
 
-// Call after turning on MOSFET
+
+// ============================================================
+// OLED WAKE
+// ============================================================
+
 void oled_wake()
 {
     if (!oled_asleep)
         return;
 
+
     delay(20);
+
+
+    // Reinitialise controller.
     oled_controller_init();
+
+
+    // Clear controller RAM because power cycling can leave
+    // stale contents behind.
+    oled_clear_controller_ram();
+
+
     oled_asleep = false;
+
     oled_dirty = true;
+
+
+    // Restore framebuffer.
     oled_update();
 }
