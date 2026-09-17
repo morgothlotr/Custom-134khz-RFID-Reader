@@ -46,5 +46,5 @@ ButtonEvent button_get_event(Button* btn) {
 
 bool button_get_state(Button* btn) {
   button_get_event(btn);
-  return btn->buttonState == LOW;
+  return btn->buttonState == HIGH;
 }
