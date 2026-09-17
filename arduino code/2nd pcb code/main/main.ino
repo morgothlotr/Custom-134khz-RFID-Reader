@@ -27,7 +27,7 @@ Button button_sleep;
 
 bool awake_time_out = 0;
 
-#define ANTENNA_ALWAYS_ON 1 //1 keeps antenna always on 0 sets normal button operation
+#define ANTENNA_ALWAYS_ON 0 //1 keeps antenna always on 0 sets normal button operation
 
 // state machine
 enum AppState {
@@ -44,7 +44,7 @@ void setup() {
   button_init(&button_sleep, WAKE_PIN);
   buzzer_init();
   serialInit();
-  //oled_init();
+  oled_init();
   demod_init();
   decoderInit();
   sleep_init();
@@ -62,14 +62,16 @@ void loop() {
   ButtonEvent button1Event = button_get_event(&button1);
   ButtonEvent button_sleepEvent = button_get_event(&button_sleep);
   if (ANTENNA_ALWAYS_ON) {
-    shd_enable(); //for tessting
+    shd_enable(); //for testing
   }
   if (currentState == IDLE) {
     if (button1Event == BUTTON_PRESSED) {
       serialPrintln("BUTTON PUSHED");
-      //oled_clear();
-      //oled_print("SCANNING...", 0);
-      //oled_update();
+
+      oled_clear();
+      oled_print("SCANNING...", 0);
+      oled_update();
+
       buzzer_beep(2000, 200);  // 2 kHz for 200ms
       currentState = SCANNING;
       shd_enable();
@@ -93,10 +95,11 @@ void loop() {
           }
           // TODO: Process finalData as needed (eeprom)
           serial_print_final_data(finalData);
-          //oled_clear();
-          //oled_print("National Code:", 0);
-          //oled_print_data(finalData, 1);
-          //oled_update();
+
+          oled_clear();
+          oled_print("National Code:", 0);
+          oled_print_data(finalData, 1);
+          oled_update();
           
           currentState = IDLE;
         }
@@ -107,9 +110,9 @@ void loop() {
     if (demod_is_timed_out()) {
       buzzer_beep(432, 700);  // Timeout tone
       serialPrintln("SCAN TIMED OUT");
-      //oled_clear();
-      //oled_print("SCAN TIMED OUT", 0);
-      //oled_update();
+      oled_clear();
+      oled_print("SCAN TIMED OUT", 0);
+      oled_update();
 
       if (!ANTENNA_ALWAYS_ON) {
         shd_disable();
