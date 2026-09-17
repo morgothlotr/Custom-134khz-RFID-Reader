@@ -62,7 +62,9 @@ void loop() {
     shd_enable();
     demod_scan_init();  // Reset packet count and start timer
     currentState = SCANNING;
-  } else if (currentState == SCANNING) {
+  }
+  
+  if (currentState == SCANNING) {
     int bit = demod_read_bit();
 
     if (bit != BIT_NONE && decoderFeed(bit)) {

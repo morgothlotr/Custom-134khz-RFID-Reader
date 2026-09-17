@@ -18,7 +18,7 @@
 #include "demod_read.h"
 #include "oled_screen.h"
 
-#define sleep_timeout_s 60
+#define sleep_timeout_s 20 // Change to 60 after demonstration
 static uint32_t last_input_time = 0;
 
 void sleep_init() {
@@ -40,12 +40,12 @@ bool sleep_check_timeout() {
 }
 
 void sleep_enter_standby() {
-  // do shutdown tasks before sutting down
+  // Shutdown tasks
   shd_disable();
   oled_clear();
   oled_update();
   oled_sleep();
-  //TODO need something to ensure writing to storage completes correctly and doesnt stop in the middle
+  // TODO: need something to ensure writing to storage completes correctly and doesnt stop in the middle
 
   LowPower.shutdown();  
 }
