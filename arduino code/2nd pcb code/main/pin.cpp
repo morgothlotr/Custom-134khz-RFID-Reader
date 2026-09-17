@@ -39,7 +39,7 @@ void pin_init(int pin) {
   pin_count++;
   
   pinMode(pin, OUTPUT);
-  digitalWrite(pin, LOW);
+  digitalWrite(pin, HIGH);
 }
 
 void toggle_pin(int pin) {

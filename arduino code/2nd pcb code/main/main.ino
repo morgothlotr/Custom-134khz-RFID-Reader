@@ -20,7 +20,7 @@
 #include "fdx_b_decoder.h"
 #include "serial_comms.h"
 #include "sleep.h"
-//#include "oled_screen.h"
+#include "oled_screen.h"
 
 Button button1;
 Button button_sleep;
@@ -50,28 +50,32 @@ void setup() {
   sleep_init();
 
   currentState = IDLE;
+  awake_time_out = 0;
 
   serialPrintln("Startup Successful");
+  oled_clear();
+  oled_print("Hello", 1);
+  oled_update();
 }
 
 void loop() {
   //NOTE: 0 is on for LEDS, and 1 is off.
   toggle_pin_update(POWER_LED_ADDRESS, 500);
-  set_pin(STATUS_LED_ADDRESS, button_get_state(&button1));
   buzzer_update();
   ButtonEvent button1Event = button_get_event(&button1);
-  ButtonEvent button_sleepEvent = button_get_event(&button_sleep);
+  set_pin(STATUS_LED_ADDRESS, !button_get_state(&button1));
+
+  ButtonEvent buttonSleepEvent = button_get_event(&button_sleep);
+
   if (ANTENNA_ALWAYS_ON) {
     shd_enable(); //for testing
   }
   if (currentState == IDLE) {
     if (button1Event == BUTTON_PRESSED) {
       serialPrintln("BUTTON PUSHED");
-
       oled_clear();
       oled_print("SCANNING...", 0);
       oled_update();
-
       buzzer_beep(2000, 200);  // 2 kHz for 200ms
       currentState = SCANNING;
       shd_enable();
@@ -95,7 +99,6 @@ void loop() {
           }
           // TODO: Process finalData as needed (eeprom)
           serial_print_final_data(finalData);
-
           oled_clear();
           oled_print("National Code:", 0);
           oled_print_data(finalData, 1);
@@ -131,5 +134,3 @@ void loop() {
     sleep_enter_standby();
   }
 }
-
-

@@ -16,6 +16,7 @@
 #include "sleep.h"
 #include "STM32LowPower.h"
 #include "demod_read.h"
+#include "oled_screen.h"
 
 void sleep_init() {
   LowPower.begin();
@@ -26,6 +27,9 @@ void sleep_init() {
 void sleep_enter_standby() {
   // do shutdown tasks before sutting down
   shd_disable();
+  oled_clear();
+  oled_update();
+  oled_sleep();
   //TODO need something to ensure writing to storage completes correctly and doesnt stop in the middle
 
   LowPower.shutdown();  
