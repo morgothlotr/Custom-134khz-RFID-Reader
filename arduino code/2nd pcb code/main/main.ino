@@ -55,7 +55,7 @@ void loop() {
     Serial.println("TEST DATA 2");
     Serial.println("TEST DATA 3");
     Serial.println("DUMP_COMPLETE");
-    return;
+    // return;
   }
 
   //NOTE: 0 is on for LEDS, and 1 is off.

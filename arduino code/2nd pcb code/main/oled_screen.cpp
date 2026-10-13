@@ -51,9 +51,9 @@ static bool oled_data(const uint8_t *data, uint8_t length)
 // SET PAGE / COLUMN
 // ============================================================
 //
-// The SSD1305 has 132 RAM columns.
+// The SSD1305 has 132 columns.
 //
-// Our panel exposes 128 pixels beginning at RAM column 4.
+// Our panel exposes 128 pixels beginning at column 4.
 //
 // Therefore:
 //     framebuffer X = 0
@@ -558,7 +558,6 @@ static void oled_char(uint8_t x, uint8_t y, char c)
         }
     }
 }
-
 
 // ============================================================
 // WRITE CHARACTER
